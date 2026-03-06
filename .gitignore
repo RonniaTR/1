@@ -66,12 +66,15 @@ agenthub/agents/youtube/db
 
 # Archive files and large assets
 **/*.zip
-**/*.tar.gz
+# **/*.tar.gz  # EXCEPTION: main.tar.gz tracked with Git LFS
 **/*.tar
 **/*.tgz
 *.pack
 *.deb
 *.dylib
+
+# Exception for main project archive
+!main.tar.gz
 
 # Build caches
 .cache/
