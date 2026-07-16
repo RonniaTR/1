@@ -3,6 +3,7 @@ import { View, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-nat
 import Svg, { Path, Defs, LinearGradient, Stop, Line, G } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { TR_PROVINCES, TR_VIEWBOX } from '../constants/turkeyMap';
+import { PROVINCE_REGION, REGION_COLOR } from '../constants/provinceRegions';
 import { projectedFeatures, KIND_STYLE, FeatureKind, GeoFeature } from '../constants/geoFeatures';
 
 type ProjFeature = GeoFeature & { x: number; y: number };
@@ -11,40 +12,54 @@ interface Props {
   visibleKinds: FeatureKind[];
   selectedProvince?: string | null;
   selectedFeatureId?: string | null;
+  night?: boolean;
+  regionMode?: boolean;
+  /** Sabit genişlik (yakınlaştırma için). Verilmezse konteyner genişliği kullanılır. */
+  width?: number;
   onSelectProvince?: (name: string) => void;
   onSelectFeature?: (f: GeoFeature) => void;
 }
+
+const PALETTE = {
+  day: { sea: ['#1a5763', '#123f47', '#0e343c'], land: ['#8cbd74', '#4f8f56', '#2f5f3d'], stroke: 'rgba(255,255,255,0.35)', grid: 'rgba(255,255,255,0.05)' },
+  night: { sea: ['#0a2831', '#071d24', '#05151b'], land: ['#3f6b4b', '#2c5238', '#1c3626'], stroke: 'rgba(255,255,255,0.18)', grid: 'rgba(255,255,255,0.04)' },
+};
 
 export default function TurkeyMap({
   visibleKinds,
   selectedProvince,
   selectedFeatureId,
+  night = false,
+  regionMode = false,
+  width: fixedWidth,
   onSelectProvince,
   onSelectFeature,
 }: Props) {
-  const [width, setWidth] = useState(0);
+  const [measured, setMeasured] = useState(0);
+  const width = fixedWidth ?? measured;
   const { width: vbW, height: vbH } = TR_VIEWBOX;
   const height = width * (vbH / vbW);
   const features = useMemo(() => projectedFeatures(), []);
   const visible = features.filter((f) => visibleKinds.includes(f.kind)) as ProjFeature[];
+  const pal = night ? PALETTE.night : PALETTE.day;
 
-  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
+  const onLayout = (e: LayoutChangeEvent) => setMeasured(e.nativeEvent.layout.width);
 
   return (
-    <View style={styles.wrap} onLayout={onLayout}>
+    <View style={[styles.wrap, fixedWidth ? { width: fixedWidth } : null]} onLayout={onLayout}>
       {width > 0 && (
         <>
           <Svg width={width} height={height} viewBox={`0 0 ${vbW} ${vbH}`}>
             <Defs>
               <LinearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#1a5763" />
-                <Stop offset="0.5" stopColor="#123f47" />
-                <Stop offset="1" stopColor="#0e343c" />
+                <Stop offset="0" stopColor={pal.sea[0]} />
+                <Stop offset="0.5" stopColor={pal.sea[1]} />
+                <Stop offset="1" stopColor={pal.sea[2]} />
               </LinearGradient>
               <LinearGradient id="land" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#8cbd74" />
-                <Stop offset="0.55" stopColor="#4f8f56" />
-                <Stop offset="1" stopColor="#2f5f3d" />
+                <Stop offset="0" stopColor={pal.land[0]} />
+                <Stop offset="0.55" stopColor={pal.land[1]} />
+                <Stop offset="1" stopColor={pal.land[2]} />
               </LinearGradient>
               <LinearGradient id="landSel" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0" stopColor="#ffe6a8" />
@@ -54,7 +69,7 @@ export default function TurkeyMap({
 
             {/* deniz zemini + koordinat ızgarası */}
             <Path d={`M0 0H${vbW}V${vbH}H0Z`} fill="url(#sea)" />
-            <G stroke="rgba(255,255,255,0.05)" strokeWidth={1}>
+            <G stroke={pal.grid} strokeWidth={1}>
               {[0.25, 0.5, 0.75].map((p) => (
                 <Line key={`h${p}`} x1={0} y1={vbH * p} x2={vbW} y2={vbH * p} />
               ))}
@@ -66,12 +81,17 @@ export default function TurkeyMap({
             {/* iller */}
             {TR_PROVINCES.map((p) => {
               const sel = p.name === selectedProvince;
+              const fill = sel
+                ? 'url(#landSel)'
+                : regionMode
+                ? REGION_COLOR[PROVINCE_REGION[p.name]] || 'url(#land)'
+                : 'url(#land)';
               return (
                 <Path
                   key={p.name}
                   d={p.d}
-                  fill={sel ? 'url(#landSel)' : 'url(#land)'}
-                  stroke={sel ? '#b9791a' : 'rgba(255,255,255,0.35)'}
+                  fill={fill}
+                  stroke={sel ? '#b9791a' : pal.stroke}
                   strokeWidth={sel ? 1.4 : 0.7}
                   onPress={() => onSelectProvince?.(p.name)}
                 />
@@ -122,11 +142,7 @@ export default function TurkeyMap({
 
 const styles = StyleSheet.create({
   wrap: { width: '100%', position: 'relative' },
-  pin: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
+  pin: { position: 'absolute', alignItems: 'center', justifyContent: 'flex-start' },
   bubble: {
     borderRadius: 999,
     alignItems: 'center',

@@ -160,6 +160,16 @@ export const LAYERS: Layer[] = [
   { id: 'sanayi', label: 'Sanayi', icon: 'construct', kinds: ['industry', 'city'], color: '#eaa93c' },
 ];
 
+// Hangi özellik hangi ilde — il kartında "bu ildeki özellikler" için.
+export const FEATURE_PROVINCE: Record<string, string> = {
+  agri: 'Ağrı', erciyes: 'Kayseri', kackar: 'Rize', uludag: 'Bursa', firat: 'Elazığ',
+  kizilirmak: 'Çorum', van: 'Van', tuz: 'Aksaray', cukurova: 'Adana', kocaeli: 'Kocaeli',
+};
+
+export function featuresInProvince(name: string) {
+  return GEO_FEATURES.filter((f) => FEATURE_PROVINCE[f.id] === name);
+}
+
 export function projectedFeatures() {
   return GEO_FEATURES.map((f) => {
     const [x, y] = project(f.lon, f.lat);
