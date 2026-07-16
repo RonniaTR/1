@@ -23,6 +23,7 @@ function RootLayoutContent() {
         <Stack.Screen name="index" />
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="harita" options={{ headerShown: false }} />
         <Stack.Screen name="quiz-game" options={{ headerShown: false }} />
         <Stack.Screen name="quiz-solo" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
